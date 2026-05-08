@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:music_reproductor/Library/library.dart';
 import 'package:music_reproductor/Settings/settings.dart';
+import 'package:music_reproductor/Player/mini_player.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -43,7 +44,11 @@ class _HomeState extends State<Home> {
         ),
       ),
 
-      bottomNavigationBar: CurvedNavigationBar(
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const MiniPlayer(),
+          CurvedNavigationBar(
         index: _pageIndex,
         height: 60.0,
         items: <Widget>[
@@ -76,6 +81,8 @@ class _HomeState extends State<Home> {
             _pageIndex = index;
           });
         },
+      ),
+        ],
       ),
     );
   }
