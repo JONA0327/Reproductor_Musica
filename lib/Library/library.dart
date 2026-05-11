@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:music_reproductor/Player/player_controller.dart';
+import 'package:music_reproductor/Explore/playlist_manager.dart';
 
 // ─── Folder model ─────────────────────────────────────────────────────────────
 
@@ -307,6 +308,163 @@ class _FolderSongsPageState extends State<_FolderSongsPage> {
     }
   }
 
+  void _showAddToPlaylist(BuildContext context, SongModel song) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          return ListenableBuilder(
+            listenable: PlaylistManager.instance,
+            builder: (_, __) {
+              final pls = PlaylistManager.instance.playlists;
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(2)),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Agregar a Playlist',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700)),
+                    Text(song.title,
+                        style: const TextStyle(
+                            color: Colors.white38, fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 12),
+                    const Divider(color: Color(0xFF2A2A2A)),
+                    // Create new playlist option
+                    ListTile(
+                      leading: const Icon(Icons.add_circle_outline_rounded,
+                          color: Color(0xFF00E5FF)),
+                      title: const Text('Nueva Playlist',
+                          style: TextStyle(color: Color(0xFF00E5FF))),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showCreateAndAdd(context, song);
+                      },
+                    ),
+                    if (pls.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text('No tienes playlists aún',
+                            style: TextStyle(
+                                color: Colors.white38, fontSize: 13)),
+                      )
+                    else
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 280),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: pls.length,
+                          itemBuilder: (_, i) {
+                            final pl = pls[i];
+                            final has = PlaylistManager.instance
+                                .hasSong(pl.id, song.id);
+                            return ListTile(
+                              leading: Icon(
+                                has
+                                    ? Icons.check_circle_rounded
+                                    : Icons.queue_music_rounded,
+                                color: has
+                                    ? const Color(0xFF00E5FF)
+                                    : Colors.white54,
+                              ),
+                              title: Text(pl.name,
+                                  style: TextStyle(
+                                      color: has
+                                          ? const Color(0xFF00E5FF)
+                                          : Colors.white,
+                                      fontWeight: has
+                                          ? FontWeight.w600
+                                          : FontWeight.normal)),
+                              subtitle: Text(
+                                  '${pl.songs.length} canciones',
+                                  style: const TextStyle(
+                                      color: Colors.white38,
+                                      fontSize: 11)),
+                              onTap: () {
+                                if (has) {
+                                  PlaylistManager.instance
+                                      .removeSong(pl.id, song.id);
+                                } else {
+                                  PlaylistManager.instance
+                                      .addSong(pl.id, song);
+                                }
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  void _showCreateAndAdd(BuildContext context, SongModel song) {
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text('Nueva Playlist',
+            style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Nombre de la playlist',
+            hintStyle: const TextStyle(color: Colors.white38),
+            filled: true,
+            fillColor: const Color(0xFF2A2A2A),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar',
+                style: TextStyle(color: Colors.white38)),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (ctrl.text.trim().isNotEmpty) {
+                final pl = await PlaylistManager.instance
+                    .createPlaylist(ctrl.text.trim());
+                await PlaylistManager.instance.addSong(pl.id, song);
+                if (context.mounted) Navigator.pop(context);
+              }
+            },
+            child: const Text('Crear y agregar',
+                style: TextStyle(
+                    color: Color(0xFF00E5FF),
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ctrl = PlayerController.instance;
@@ -470,6 +628,8 @@ class _FolderSongsPageState extends State<_FolderSongsPage> {
                               ],
                             ),
                             onTap: () => _tapSong(song),
+                            onLongPress: () =>
+                                _showAddToPlaylist(context, song),
                           ),
                         );
                       },

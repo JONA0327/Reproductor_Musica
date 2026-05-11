@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:on_audio_query/on_audio_query.dart';
+import 'full_player.dart';
 import 'player_controller.dart';
 
 /// Compact player bar shown above the bottom nav bar while music plays.
@@ -10,10 +11,10 @@ class MiniPlayer extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: PlayerController.instance,
-      builder: (_, __) {
+        builder: (_, _) {
         final ctrl = PlayerController.instance;
-        final song = ctrl.currentSong;
-        if (song == null) return const SizedBox.shrink();
+        final info = ctrl.currentInfo;
+        if (info == null) return const SizedBox.shrink();
 
         final totalMs = ctrl.duration.inMilliseconds;
         final progress = totalMs > 0
@@ -38,42 +39,73 @@ class MiniPlayer extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Row(
                   children: [
-                    // Artwork
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: QueryArtworkWidget(
-                        id: song.id,
-                        type: ArtworkType.AUDIO,
-                        size: 40,
-                        nullArtworkWidget: Container(
-                          width: 40,
-                          height: 40,
-                          color: const Color(0xFF1E1E1E),
-                          child: const Icon(Icons.music_note_rounded,
-                              color: Color(0xFF00E5FF), size: 20),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    // Song info
+                    // ── Tappable left area → open full player ──────────────
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(song.title,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis),
-                          Text(song.artist ?? 'Desconocido',
-                              style: const TextStyle(
-                                  color: Colors.white38, fontSize: 11),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis),
-                        ],
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => Navigator.of(context).push(
+                          PageRouteBuilder(
+                            pageBuilder: (_, _, _) =>
+                                const FullPlayerPage(),
+                            transitionsBuilder: (_, anim, _, child) =>
+                                SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: const Offset(0, 1),
+                                    end: Offset.zero,
+                                  ).animate(CurvedAnimation(
+                                      parent: anim,
+                                      curve: Curves.easeOutCubic)),
+                                  child: child,
+                                ),
+                            transitionDuration:
+                                const Duration(milliseconds: 340),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            // Artwork with Hero for smooth transition
+                            Hero(
+                              tag: 'mini_player_artwork',
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: QueryArtworkWidget(
+                                  id: info.id,
+                                  type: ArtworkType.AUDIO,
+                                  size: 40,
+                                  nullArtworkWidget: Container(
+                                    width: 40,
+                                    height: 40,
+                                    color: const Color(0xFF1E1E1E),
+                                    child: const Icon(Icons.music_note_rounded,
+                                        color: Color(0xFF00E5FF), size: 20),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            // Song info
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(info.title,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis),
+                                  Text(info.artist ?? 'Desconocido',
+                                      style: const TextStyle(
+                                          color: Colors.white38, fontSize: 11),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     // Controls

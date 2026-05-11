@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
+import 'package:music_reproductor/AI/ai_music_engine.dart';
+import 'package:music_reproductor/Explore/explore.dart';
 import 'package:music_reproductor/Library/library.dart';
 import 'package:music_reproductor/Settings/settings.dart';
 import 'package:music_reproductor/Player/mini_player.dart';
@@ -16,10 +18,10 @@ class _HomeState extends State<Home> {
 
   // Vistas de la aplicación
   final List<Widget> _views = [
-    const Center(child: Text("Explorar Música", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w300))),
+    const ExploreView(),
     const LibraryView(),
     const Center(child: Text("Compartir Mix", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w300))),
-    const Center(child: Text("IA Music Engine", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF00E5FF)))),
+    const AIMusicEngineView(),
     const SettingsView(),
   ];
 

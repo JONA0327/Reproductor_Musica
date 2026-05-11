@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:music_reproductor/Home/home.dart';
+import 'package:music_reproductor/Explore/playlist_manager.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.example.music_reproductor.channel',
+    androidNotificationChannelName: 'Reproducción de música',
+    androidNotificationIcon: 'mipmap/ic_launcher',
+    androidNotificationOngoing: true,
+    androidStopForegroundOnPause: false,
+  );
+  await PlaylistManager.instance.load();
   runApp(const ReproductorApp());
 }
 

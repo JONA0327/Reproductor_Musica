@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:music_reproductor/AI/ai_service.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
@@ -19,8 +20,43 @@ class _SettingsViewState extends State<SettingsView> {
   String _audioQuality = 'Alta';
   String _theme = 'Oscuro';
 
+  // AI key controllers
+  final _openaiCtrl = TextEditingController();
+  final _anthropicCtrl = TextEditingController();
+  final _geminiCtrl = TextEditingController();
+  bool _showOpenaiKey = false;
+  bool _showAnthropicKey = false;
+  bool _showGeminiKey = false;
+
   final List<String> _audioQualities = ['Normal', 'Alta', 'Sin pérdida'];
   final List<String> _themes = ['Oscuro', 'Claro', 'Sistema'];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAIKeys();
+  }
+
+  @override
+  void dispose() {
+    _openaiCtrl.dispose();
+    _anthropicCtrl.dispose();
+    _geminiCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadAIKeys() async {
+    final openai = await AIKeyStore.getKey(AIProvider.openai);
+    final anthropic = await AIKeyStore.getKey(AIProvider.anthropic);
+    final gemini = await AIKeyStore.getKey(AIProvider.gemini);
+    if (mounted) {
+      setState(() {
+        _openaiCtrl.text = openai ?? '';
+        _anthropicCtrl.text = anthropic ?? '';
+        _geminiCtrl.text = gemini ?? '';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -145,6 +181,85 @@ class _SettingsViewState extends State<SettingsView> {
                 activeColor: const Color(0xFF00E5FF),
               ),
             ]),
+          ),
+
+          // IA Music Engine keys section
+          SliverToBoxAdapter(
+            child: _sectionHeader(Icons.auto_awesome_rounded, 'IA Music Engine'),
+          ),
+          SliverToBoxAdapter(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFF141414),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.06)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 12, 16, 10),
+                    child: Row(
+                      children: [
+                        Icon(Icons.key_rounded, size: 15, color: Colors.white38),
+                        SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Ingresa la API key de cada proveedor. '
+                            'Solo se almacena localmente en tu dispositivo.',
+                            style: TextStyle(color: Colors.white38, fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _apiKeyField(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    label: 'ChatGPT (OpenAI)',
+                    hint: 'sk-…',
+                    controller: _openaiCtrl,
+                    visible: _showOpenaiKey,
+                    onToggleVisible: () =>
+                        setState(() => _showOpenaiKey = !_showOpenaiKey),
+                    onSave: () =>
+                        AIKeyStore.setKey(AIProvider.openai, _openaiCtrl.text),
+                  ),
+                  Divider(
+                      height: 1,
+                      thickness: 1,
+                      indent: 56,
+                      color: Colors.white.withOpacity(0.06)),
+                  _apiKeyField(
+                    icon: Icons.auto_fix_high_rounded,
+                    label: 'Claude (Anthropic)',
+                    hint: 'sk-ant-…',
+                    controller: _anthropicCtrl,
+                    visible: _showAnthropicKey,
+                    onToggleVisible: () =>
+                        setState(() => _showAnthropicKey = !_showAnthropicKey),
+                    onSave: () => AIKeyStore.setKey(
+                        AIProvider.anthropic, _anthropicCtrl.text),
+                  ),
+                  Divider(
+                      height: 1,
+                      thickness: 1,
+                      indent: 56,
+                      color: Colors.white.withOpacity(0.06)),
+                  _apiKeyField(
+                    icon: Icons.stars_rounded,
+                    label: 'Gemini (Google)',
+                    hint: 'AIza…',
+                    controller: _geminiCtrl,
+                    visible: _showGeminiKey,
+                    onToggleVisible: () =>
+                        setState(() => _showGeminiKey = !_showGeminiKey),
+                    onSave: () =>
+                        AIKeyStore.setKey(AIProvider.gemini, _geminiCtrl.text),
+                  ),
+                ],
+              ),
+            ),
           ),
 
           // Acerca de section
@@ -336,6 +451,98 @@ class _SettingsViewState extends State<SettingsView> {
               ? const Icon(Icons.chevron_right_rounded, color: Colors.white24, size: 20)
               : null),
       onTap: onTap,
+    );
+  }
+
+  Widget _apiKeyField({
+    required IconData icon,
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    required bool visible,
+    required VoidCallback onToggleVisible,
+    required VoidCallback onSave,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: Colors.white54),
+              const SizedBox(width: 10),
+              Text(label,
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 13,
+                      fontWeight: FontWeight.w500)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  obscureText: !visible,
+                  style: const TextStyle(
+                      color: Colors.white70, fontSize: 13,
+                      fontFamily: 'monospace'),
+                  decoration: InputDecoration(
+                    hintText: hint,
+                    hintStyle:
+                        const TextStyle(color: Colors.white24, fontSize: 13),
+                    filled: true,
+                    fillColor: const Color(0xFF0F0F0F),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        visible
+                            ? Icons.visibility_off_rounded
+                            : Icons.visibility_rounded,
+                        color: Colors.white24,
+                        size: 18,
+                      ),
+                      onPressed: onToggleVisible,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: () {
+                  onSave();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('Key de $label guardada'),
+                    backgroundColor: const Color(0xFF00E5FF),
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 2),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ));
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF00E5FF),
+                  backgroundColor:
+                      const Color(0xFF00E5FF).withOpacity(0.1),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                ),
+                child: const Text('Guardar',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
